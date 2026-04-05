@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tank Triage Dashboard</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --text: #c9d1d9;
+  --card-bg: #161b22;
+  --border: #30363d;
+  --red: #da3633;
+  --green: #238636;
+  --yellow: #d29922;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: monospace;
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+}
+.container {
+  width: 100%;
+  max-width: 390px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+#banner {
+  display: none;
+  background-color: var(--red);
+  color: #fff;
+  text-align: center;
+  padding: 12px;
+  font-weight: bold;
+  border-radius: 6px;
+  font-size: 1.1rem;
+}
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 15px;
+}
+.badge-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+#label-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: var(--border);
+}
+.lbl-CLEAN { background-color: var(--green) !important; }
+.lbl-TURBID, .lbl-HIGH-TDS { background-color: var(--yellow) !important; color: #000 !important; }
+.lbl-BOTH { background-color: var(--red) !important; }
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+}
+.data-label { font-size: 1rem; color: #8b949e; }
+.data-val { font-size: 1.6rem; font-weight: bold; }
+.unit { font-size: 0.9rem; color: #8b949e; }
+.delta { font-size: 1rem; text-align: right; }
+.pos { color: var(--red); }
+.neg { color: var(--green); }
+.zero { color: var(--text); }
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 15px 0;
+}
+.baseline-section {
+  display: flex;
+  justify-content: space-between;
+}
+.b-box {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.b-box:first-child { margin-right: 10px; }
+.b-title { font-size: 0.8rem; color: #8b949e; margin-bottom: 5px; }
+.b-val { font-size: 1.1rem; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div id="banner">ANOMALY DETECTED</div>
+
+  <div class="card">
+    <div class="badge-container">
+      <div id="label-badge">--</div>
+    </div>
+    
+    <div class="row">
+      <div class="data-label">TDS</div>
+      <div style="text-align: right;">
+        <div class="delta" id="deltatds">--</div>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <span class="data-val" id="tdsppm">--</span> <span class="unit">ppm</span>
+    </div>
+
+    <hr>
+
+    <div class="row">
+      <div class="data-label">Turbidity</div>
+      <div style="text-align: right;">
+        <div class="delta" id="deltaturb">--</div>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <span class="data-val" id="turbv">--</span> <span class="unit">V</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size: 0.9rem; color: #8b949e; margin-bottom: 10px;">Baseline</div>
+    <div class="baseline-section">
+      <div class="b-box">
+        <div class="b-title">TDS</div>
+        <div class="b-val"><span id="baselinetds">--</span> <span class="unit">ppm</span></div>
+      </div>
+      <div class="b-box">
+        <div class="b-title">Turbidity</div>
+        <div class="b-val"><span id="baselineturb">--</span> <span class="unit">V</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const els = {
+  banner: document.getElementById('banner'),
+  badge: document.getElementById('label-badge'),
+  tds: document.getElementById('tdsppm'),
+  turb: document.getElementById('turbv'),
+  dtds: document.getElementById('deltatds'),
+  dturb: document.getElementById('deltaturb'),
+  btds: document.getElementById('baselinetds'),
+  bturb: document.getElementById('baselineturb')
+};
+
+function formatVal(val, prec) {
+  return typeof val === 'number' ? val.toFixed(prec) : '--';
+}
+
+function formatDelta(val, prec, el) {
+  if (typeof val !== 'number') {
+    el.textContent = '--';
+    el.className = 'delta zero';
+    return;
+  }
+  const sign = val > 0 ? '+' : '';
+  const cls = val > 0 ? 'pos' : (val < 0 ? 'neg' : 'zero');
+  el.textContent = sign + val.toFixed(prec);
+  el.className = `delta ${cls}`;
+}
+
+function updateUI(d) {
+  if (d.anomaly) {
+    els.banner.style.display = 'block';
+    els.banner.textContent = 'ANOMALY DETECTED';
+    els.banner.style.backgroundColor = 'var(--red)';
+  } else {
+    els.banner.style.display = 'none';
+  }
+
+  els.badge.textContent = d.label || 'UNKNOWN';
+  els.badge.className = `lbl-${d.label}`;
+
+  els.tds.textContent = formatVal(d.tdsppm, 0);
+  els.turb.textContent = formatVal(d.turbv, 2);
+
+  formatDelta(d.deltatds, 1, els.dtds);
+  formatDelta(d.deltaturb, 2, els.dturb);
+
+  els.btds.textContent = formatVal(d.baselinetds, 1);
+  els.bturb.textContent = formatVal(d.baselineturb, 2);
+}
+
+function setOffline() {
+  els.banner.style.display = 'block';
+  els.banner.textContent = 'SENSOR OFFLINE';
+  els.banner.style.backgroundColor = 'var(--red)';
+  
+  els.badge.textContent = 'OFFLINE';
+  els.badge.className = '';
+
+  ['tds', 'turb', 'dtds', 'dturb', 'btds', 'bturb'].forEach(k => {
+    els[k].textContent = '--';
+  });
+  els.dtds.className = 'delta zero';
+  els.dturb.className = 'delta zero';
+}
+
+async function fetchSensorData() {
+  try {
+    const res = await fetch('/api/data');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    updateUI(data);
+  } catch (e) {
+    setOffline();
+  }
+}
+
+fetchSensorData();
+setInterval(fetchSensorData, 3000);
+</script>
+
+</body>
+</html>

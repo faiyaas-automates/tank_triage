@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tank Water Triage Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-tds: #38bdf8;
+      --accent-turb: #fb923c;
+      --delta-pos: #f87171;
+      --delta-neg: #34d399;
+      --label-clean-bg: #166534; --label-clean-fg: #bbf7d0;
+      --label-turbid-bg: #854d0e; --label-turbid-fg: #fef08a;
+      --label-hightds-bg: #7f1d1d; --label-hightds-fg: #fca5a5;
+      --label-both-bg: #4c1d95; --label-both-fg: #ddd6fe;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 { font-weight: 900; font-size: 2rem; letter-spacing: -0.02em; }
+    p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Baseline Deviation Grid */
+    .delta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      text-align: center;
+    }
+
+    .delta-cell {
+      background: rgba(0,0,0,0.2);
+      padding: 1rem 0.5rem;
+      border-radius: 0.75rem;
+    }
+
+    .delta-label { font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+    .delta-value { font-weight: 700; font-size: 1.1rem; }
+    .delta-unit { font-size: 0.65rem; font-weight: 400; opacity: 0.6; margin-left: 2px; }
+
+    .delta-positive { color: var(--delta-pos) !important; }
+    .delta-negative { color: var(--delta-neg) !important; }
+
+    /* Label Badge */
+    .triage-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      text-align: center;
+    }
+
+    #badge {
+      display: inline-block;
+      padding: 0.5rem 1.75rem;
+      border-radius: 2rem;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #action-text {
+      font-size: 1rem;
+      line-height: 1.5;
+      font-weight: 600;
+      color: var(--text-main);
+      max-width: 300px;
+    }
+
+    /* Chart Containers */
+    .chart-container { position: relative; height: 260px; width: 100%; }
+
+    /* Controls */
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
+      color: var(--text-main);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+    button:active { transform: translateY(0); }
+
+    .footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .delta-grid { grid-template-columns: repeat(2, 1fr); }
+      .delta-cell:nth-child(3n) { grid-column: span 2; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>TANK TRIAGE</h1>
+      <p class="subtitle" id="ts">Initializing session...</p>
+    </header>
+
+    <div class="main-grid">
+      <!-- PANEL 1: Baseline Deviation -->
+      <div class="card">
+        <div class="card-title">Rolling Deviation <span id="sync-dot" style="width:8px; height:8px; border-radius:50%; background:var(--delta-neg); transition: opacity 0.5s;"></span></div>
+        <div class="delta-grid">
+          <!-- TDS ROW -->
+          <div class="delta-cell">
+            <div class="delta-label">TDS Current</div>
+            <div class="delta-value" id="tdsppm">0.0<span class="delta-unit">ppm</span></div>
+          </div>
+          <div class="delta-cell">
+            <div class="delta-label">Baseline</div>
+            <div class="delta-value" id="baselinetds">0.0<span class="delta-unit">ppm</span></div>
+          </div>
+          <div class="delta-cell">
+            <div class="delta-label">&Delta; TDS (±80)</div>
+            <div class="delta-value" id="deltatds">+0.0</div>
+          </div>
+          <!-- TURBIDITY ROW -->
+          <div class="delta-cell">
+            <div class="delta-label">Turb Current</div>
+            <div class="delta-value" id="turbv">0.000<span class="delta-unit">V</span></div>
+          </div>
+          <div class="delta-cell">
+            <div class="delta-label">Baseline</div>
+            <div class="delta-value" id="baselineturb">0.000<span class="delta-unit">V</span></div>
+          </div>
+          <div class="delta-cell">
+            <div class="delta-label">&Delta; Turb (±0.4)</div>
+            <div class="delta-value" id="deltaturb">+0.000</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 2: Triage Label -->
+      <div class="card">
+        <div class="card-title">Triage Classification</div>
+        <div class="triage-panel">
+          <span id="badge" aria-live="polite">STANDBY</span>
+          <div id="action-text">Waiting for sensor data...</div>
+        </div>
+      </div>
+
+      <!-- PANEL 3: 2D Scatter -->
+      <div class="card">
+        <div class="card-title">TDS vs Turbidity Landscape</div>
+        <div class="chart-container">
+          <canvas id="scatterChart"></canvas>
+        </div>
+      </div>
+
+      <!-- PANEL 4: Time-Series TDS -->
+      <div class="card">
+        <div class="card-title">TDS Concentration (ppm)</div>
+        <div class="chart-container">
+          <canvas id="tdsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- PANEL 5: Time-Series Turbidity -->
+      <div class="card">
+        <div class="card-title">Turbidity Voltage (V)</div>
+        <div class="chart-container">
+          <canvas id="turbChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Demo Controls -->
+      <div class="card">
+        <div class="card-title">System Simulation</div>
+        <div class="btn-row">
+          <button onclick="injectDemo('clean')">Clean</button>
+          <button onclick="injectDemo('turbid')">Turbid</button>
+          <button onclick="injectDemo('hightds')">High TDS</button>
+          <button onclick="injectDemo('both')">Both</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      Powered by TankWater Triage AI &bull; Refreshes every 3s
+    </footer>
+  </div>
+
+  <script>
+    const COLORS = {
+      CLEAN:   { bg: '#166534', fg: '#bbf7d0', msg: 'Water is safe for all uses.' },
+      TURBID:  { bg: '#854d0e', fg: '#fef08a', msg: 'Flush tank for 3 mins.' },
+      'HIGH-TDS': { bg: '#7f1d1d', fg: '#fca5a5', msg: 'Use bottled water.' },
+      BOTH:    { bg: '#4c1d95', fg: '#ddd6fe', msg: 'Stop all use! Clean tank now.' },
+      STANDBY: { bg: '#334155', fg: '#f8fafc', msg: 'Waiting for sensor data...' }
+    };
+
+    let scatterChart, tdsChart, turbChart;
+
+    function initCharts() {
+      const globalCfg = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 0 },
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }
+        }
+      };
+
+      // 2D Scatter
+      scatterChart = new Chart(document.getElementById('scatterChart'), {
+        type: 'scatter',
+        data: {
+          datasets: [
+            { label: 'History', data: [], backgroundColor: 'rgba(100,116,139,0.4)', pointRadius: 4 },
+            { label: 'Current', data: [], backgroundColor: '#f43f5e', pointStyle: 'star', pointRadius: 10 }
+          ]
+        },
+        options: {
+          ...globalCfg,
+          scales: {
+            x: { ...globalCfg.scales.x, title: { display: true, text: 'TDS (ppm)', color: '#94a3b8' } },
+            y: { ...globalCfg.scales.y, title: { display: true, text: 'Turb (V)', color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // TDS Line
+      tdsChart = new Chart(document.getElementById('tdsChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ borderColor: '#38bdf8', borderWidth: 3, pointRadius: 0, tension: 0.3, data: [] }] },
+        options: globalCfg
+      });
+
+      // Turbidity Line
+      turbChart = new Chart(document.getElementById('turbChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ borderColor: '#fb923c', borderWidth: 3, pointRadius: 0, tension: 0.3, data: [] }] },
+        options: globalCfg
+      });
+    }
+
+    function updateDashboard(history) {
+      if (!history || history.length === 0) return;
+      const latest = history[history.length - 1];
+
+      // Update values
+      document.getElementById('tdsppm').innerHTML = `${latest.tdsppm.toFixed(1)}<span class="delta-unit">ppm</span>`;
+      document.getElementById('baselinetds').innerHTML = `${latest.baselinetds.toFixed(1)}<span class="delta-unit">ppm</span>`;
+      
+      const dTdsValue = latest.deltatds;
+      const dTdsEl = document.getElementById('deltatds');
+      dTdsEl.textContent = (dTdsValue >= 0 ? '+' : '') + dTdsValue.toFixed(1);
+      
+      // Threshold check 80 ppm
+      dTdsEl.className = 'delta-value ' + (Math.abs(dTdsValue) > 80 ? 'delta-positive' : 'delta-negative');
+
+      document.getElementById('turbv').innerHTML = `${latest.turbv.toFixed(3)}<span class="delta-unit">V</span>`;
+      document.getElementById('baselineturb').innerHTML = `${latest.baselineturb.toFixed(3)}<span class="delta-unit">V</span>`;
+      
+      const dTurbValue = latest.deltaturb;
+      const dTurbEl = document.getElementById('deltaturb');
+      dTurbEl.textContent = (dTurbValue >= 0 ? '+' : '') + dTurbValue.toFixed(3);
+      
+      // Threshold check 0.4 V
+      dTurbEl.className = 'delta-value ' + (Math.abs(dTurbValue) > 0.4 ? 'delta-positive' : 'delta-negative');
+
+      // Update Triage
+      const lbl = latest.label || 'CLEAN';
+      const badge = document.getElementById('badge');
+      const action = document.getElementById('action-text');
+      badge.textContent = lbl;
+      badge.style.backgroundColor = COLORS[lbl].bg;
+      badge.style.color = COLORS[lbl].fg;
+      action.textContent = COLORS[lbl].msg;
+
+      // Update Charts
+      const timeLabels = history.map((_, i) => i);
+      
+      // Time series
+      tdsChart.data.labels = timeLabels;
+      tdsChart.data.datasets[0].data = history.map(d => d.tdsppm);
+      tdsChart.update('none');
+
+      turbChart.data.labels = timeLabels;
+      turbChart.data.datasets[0].data = history.map(d => d.turbv);
+      turbChart.update('none');
+
+      // Scatter
+      const historicalData = history.slice(0, -1).map(d => ({ x: d.tdsppm, y: d.turbv }));
+      scatterChart.data.datasets[0].data = historicalData;
+      scatterChart.data.datasets[1].data = [{ x: latest.tdsppm, y: latest.turbv }];
+      scatterChart.update('none');
+
+      document.getElementById('ts').textContent = 'Last synced: ' + new Date().toLocaleTimeString();
+    }
+
+    function fetchData() {
+      const dot = document.getElementById('sync-dot');
+      dot.style.opacity = '1';
+      fetch('/history')
+        .then(r => r.json())
+        .then(d => {
+          updateDashboard(d);
+          setTimeout(() => dot.style.opacity = '0.3', 500);
+        })
+        .catch(e => console.error('History fetch failed', e));
+    }
+
+    function injectDemo(sample) {
+      fetch('/demo/' + sample).then(() => fetchData());
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initCharts();
+      fetchData();
+      setInterval(fetchData, 3000);
+    });
+  </script>
+</body>
+</html>

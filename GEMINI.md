@@ -1,0 +1,12 @@
+# Tank Triage Agent Rules
+- Hardware target: ESP32 WROOM-32 (30-pin), Arduino IDE 2.3, board "ESP32 Dev Module"
+- GPIO26 = BC547 power switch, GPIO32 = TDS sensor, GPIO33 = Turbidity (10kΩ+10kΩ divider)
+- Dashboard: ESP32 AsyncWebServer + LittleFS (data/index.html). No external server.
+- Libraries approved: ESPAsyncWebServer, AsyncTCP (manually installed)
+- Never introduce dependencies beyond the approved AsyncWebServer stack
+- Never auto-commit. Always produce a diff Artifact for review first.
+- The eight confirmed JSON fields are: tdsppm, turbv, deltatds, deltaturb, anomaly, label, baselinetds, baselineturb — never rename them
+- Wi-Fi credentials are placeholders ("YOUR_SSID" / "YOUR_PASSWORD") — never hardcode real values
+- No String class in async callbacks — use char arrays and snprintf only
+- No Serial.print inside server.on callbacks (RTOS task constraint)
+- Shared state uses portMUX_TYPE + taskENTER_CRITICAL / taskEXIT_CRITICAL
