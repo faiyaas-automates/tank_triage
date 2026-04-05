@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tank Triage — WiFi Setup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #30363d;
+      --accent:   #58a6ff;
+      --accent2:  #3fb950;
+      --danger:   #f85149;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --radius:   10px;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      padding: 1.5rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 2.25rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo svg { flex-shrink: 0; }
+
+    .logo-text h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    .logo-text p {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.25rem 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.45rem;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 0.65rem 0.85rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.18);
+    }
+
+    .field { margin-bottom: 1.1rem; }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 0.25rem;
+    }
+
+    button[type="submit"]:hover  { opacity: 0.88; }
+    button[type="submit"]:active { transform: scale(0.98); }
+    button[type="submit"]:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* Status banner */
+    #status {
+      display: none;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      margin-top: 1rem;
+      line-height: 1.45;
+    }
+
+    #status.success {
+      display: block;
+      background: rgba(63, 185, 80, 0.12);
+      border: 1px solid rgba(63, 185, 80, 0.35);
+      color: var(--accent2);
+    }
+
+    #status.error {
+      display: block;
+      background: rgba(248, 81, 73, 0.10);
+      border: 1px solid rgba(248, 81, 73, 0.35);
+      color: var(--danger);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(13, 17, 23, 0.35);
+      border-top-color: #0d1117;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      text-align: center;
+      font-size: 0.73rem;
+      color: var(--muted);
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="logo">
+    <!-- water droplet icon -->
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none"
+         xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="36" height="36" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <path d="M18 6 C18 6 10 15.5 10 22 A8 8 0 0 0 26 22 C26 15.5 18 6 18 6Z"
+            fill="#58a6ff" fill-opacity="0.85"/>
+      <path d="M14 22 Q15.5 19.5 18 19" stroke="#e6edf3" stroke-width="1.2"
+            stroke-linecap="round" fill="none" opacity="0.5"/>
+    </svg>
+    <div class="logo-text">
+      <h1>Tank Triage</h1>
+      <p>WiFi Provisioning &nbsp;·&nbsp; <span lang="ta">நிர்வாக அமைப்பு</span></p>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <form id="wifiForm" novalidate>
+
+    <div class="field">
+      <label for="ssid">Network SSID</label>
+      <input id="ssid" name="ssid" type="text"
+             placeholder="Your hotspot name"
+             autocomplete="off" autocorrect="off"
+             autocapitalize="off" spellcheck="false"
+             required />
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+             placeholder="Leave blank for open networks"
+             autocomplete="current-password" />
+      <p class="hint">Optional — leave empty for open / no-password networks.</p>
+    </div>
+
+    <button type="submit" id="submitBtn">Connect &amp; Save</button>
+
+    <div id="status" role="alert" aria-live="polite"></div>
+
+  </form>
+
+<div id="stage-bar" style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:0.75rem;"></div>
+<script>
+(function(){
+  const bar = document.getElementById('stage-bar');
+  const poll = setInterval(()=>{
+    fetch('/api/status')
+      .then(r=>r.json())
+      .then(data=>{
+        if(data.ip && data.ip !== ''){
+          bar.innerHTML = `Connected — open dashboard at <a href="http://${data.ip}/">${data.ip}</a>`;
+          clearInterval(poll);
+        } else {
+          bar.textContent = `Stage: ${data.stage}, IP: ${data.ip || '—'}`;
+        }
+      })
+      .catch(()=>{ bar.textContent='Status unavailable'; });
+  },2000);
+})();
+</script>
+
+  <footer>Device will restart automatically after saving.</footer>
+
+</div>
+
+<script>
+  (function () {
+    const form      = document.getElementById('wifiForm');
+    const ssidInput = document.getElementById('ssid');
+    const passInput = document.getElementById('password');
+    const btn       = document.getElementById('submitBtn');
+    const status    = document.getElementById('status');
+
+    function showStatus(ok, msg) {
+      status.className = ok ? 'success' : 'error';
+      status.textContent = msg;
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const ssid = ssidInput.value.trim();
+      if (!ssid) {
+        showStatus(false, 'SSID is required.');
+        ssidInput.focus();
+        return;
+      }
+
+      // Disable form while request is in flight
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Saving…';
+      status.className = '';
+      status.style.display = 'none';
+
+      const body = 'ssid=' + encodeURIComponent(ssid)
+                 + '&password=' + encodeURIComponent(passInput.value);
+
+      fetch('/api/wifi', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body
+      })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          showStatus(true,
+            '✓ Credentials saved. Device is restarting — ' +
+            'rejoin "' + ssid + '" and open the dashboard at the ESP32 IP.');
+          btn.innerHTML = 'Saved ✓';
+        } else {
+          showStatus(false, data.message || 'Unknown error.');
+          btn.disabled = false;
+          btn.innerHTML = 'Connect &amp; Save';
+        }
+      })
+      .catch(function () {
+        showStatus(false, 'Request failed. Check connection to TankTriage AP.');
+        btn.disabled = false;
+        btn.innerHTML = 'Connect &amp; Save';
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
